@@ -123,7 +123,9 @@ public class Display extends javax.swing.JPanel {
         // [bits 12-32][bits 8-11][bits 4-7][bits 0-3]
         
         int bits = 12;
-        int rmask = 0xF00; int gmask = 0x0F0; int bmask = 0x00F;
+        int rmask = 0xF00;
+        int gmask = 0x0F0;
+        int bmask = 0x00F;
         
         DirectColorModel dcm = new DirectColorModel(bits, rmask, gmask, bmask);
         return dcm;

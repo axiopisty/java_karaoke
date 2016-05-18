@@ -20,6 +20,8 @@ import java.io.*;
 import java.util.*;
 import java.util.zip.*;
 import javax.sound.sampled.*;
+import javax.swing.filechooser.*;
+import javax.swing.filechooser.FileFilter;
 
 /*
  * Created on Jul 12, 2006
@@ -34,56 +36,72 @@ import javax.sound.sampled.*;
  */
 public class ApplicationDriver
 {
+    private final static JFileChooser jfc = new JFileChooser();
+
     public static void main (String[] args)
     {
-        try {
-            JFileChooser jfc = new JFileChooser();
-            jfc.setDialogType(JFileChooser.OPEN_DIALOG);
-            jfc.setCurrentDirectory(new File("/Volumes/data/elliot/karaoke/Tracks"));
-            int response = jfc.showOpenDialog(null);
-            if(response != JFileChooser.APPROVE_OPTION)
-                return;
-
-            String name = jfc.getSelectedFile().getName();
-            if(!name.endsWith("zip"))
-            {
-                //System.out.println("Need to use a zip file");
-                return;
+        jfc.setDialogType(JFileChooser.OPEN_DIALOG);
+        jfc.setCurrentDirectory(new File("/Volumes/data/elliot/karaoke/Tracks"));
+        jfc.setFileFilter(new FileFilter() {
+            @Override
+            public boolean accept(File f) {
+                return f.getName().endsWith(".zip") || f.getName().endsWith(".ZIP");
             }
 
-            name = name.substring(0, name.length()-4);
-            File zipFileObject = jfc.getSelectedFile();
-            ZipFile zf = new ZipFile(zipFileObject);
-
-            ZipEntry zeMusicFile = null;
-            ZipEntry zeCdgFile = null;
-
-            Enumeration<? extends ZipEntry> entries = zf.entries();
-            while(entries.hasMoreElements() && (zeMusicFile == null || zeCdgFile == null)) {
-                ZipEntry zipEntry = entries.nextElement();
-                String entryName = zipEntry.getName();
-                if(entryName.endsWith(".mp3") || entryName.endsWith(".MP3")) {
-                    zeMusicFile = zf.getEntry(entryName);
-                } else if(entryName.endsWith(".cdg") || entryName.endsWith(".CDG")) {
-                    zeCdgFile = zf.getEntry(entryName);
-                }
+            @Override
+            public String getDescription() {
+                return "*.zip";
             }
+        });
+
+        File zipFile;
+        while((zipFile = getZipFile()) != null) {
+            try {
+                play(zipFile);
+            } catch (IOException e) {
+                e.printStackTrace(System.err);
+            }
+        }
+
+    }
+
+    public static File getZipFile() {
+        int response = jfc.showOpenDialog(null);
+        if(response != JFileChooser.APPROVE_OPTION)
+            return jfc.getSelectedFile();
+        else
+            return null;
+    }
+
+    public static void play(File zipFileObject) throws IOException {
+        ZipFile zf = new ZipFile(zipFileObject);
+
+        ZipEntry zeMusicFile = null;
+        ZipEntry zeCdgFile = null;
+
+        Enumeration<? extends ZipEntry> entries = zf.entries();
+        while(entries.hasMoreElements() && (zeMusicFile == null || zeCdgFile == null)) {
+            ZipEntry zipEntry = entries.nextElement();
+            String entryName = zipEntry.getName();
+            if(entryName.endsWith(".mp3") || entryName.endsWith(".MP3")) {
+                zeMusicFile = zf.getEntry(entryName);
+            } else if(entryName.endsWith(".cdg") || entryName.endsWith(".CDG")) {
+                zeCdgFile = zf.getEntry(entryName);
+            }
+        }
 
 
-            InputStream f  = zf.getInputStream(zeMusicFile);
-            InputStream c  = zf.getInputStream(zeCdgFile);
+        InputStream f  = zf.getInputStream(zeMusicFile);
+        InputStream c  = zf.getInputStream(zeCdgFile);
 
-            Frame kFrame = new Frame();
-            Dispatcher dispatcher = new Dispatcher(kFrame.getPanel());
-            MusicPlayer mp = new MusicPlayer(f, c, dispatcher);
-            kFrame.setVisible(true);
+        Frame kFrame = new Frame();
+        Dispatcher dispatcher = new Dispatcher(kFrame.getPanel());
+        MusicPlayer mp = new MusicPlayer(f, c, dispatcher);
+        kFrame.setVisible(true);
 
-            //System.out.println("Creating thread");
-            Thread t = new Thread(mp);
-            //System.out.println("Thread sent off");
-            t.start();
-
-        } catch (Exception ex) { ex.printStackTrace(System.err); }
-
+        //System.out.println("Creating thread");
+        Thread t = new Thread(mp);
+        //System.out.println("Thread sent off");
+        t.start();
     }
 }
