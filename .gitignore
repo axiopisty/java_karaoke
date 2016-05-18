@@ -2,3 +2,6 @@
 bin
 *.zip
 MpegAudioSPI1.9.4
+.idea
+*.iml
+target
